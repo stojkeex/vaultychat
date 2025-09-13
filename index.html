@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaulty - Your AI Companion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh on mobile */
+        }
+
+        /* Hide scrollbar for webkit browsers */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Typing indicator animation */
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            float: left;
+            margin: 0 1px;
+            background-color: #9E9EA1;
+            display: block;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: bob 1s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes bob {
+            50% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        /* Animated Backgrounds */
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .bg-animated-gradient-1 {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+        }
+
+        /* New gradient classes */
+        .gradient-text {
+            background: linear-gradient(225deg, #00298a 0%, #0091ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        .gradient-bg {
+            background: linear-gradient(225deg, #00298a 0%, #0091ff 100%);
+        }
+
+        @keyframes stars {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-2000px); }
+        }
+        .stars-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+        .stars, .stars2, .stars3 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent;
+            animation: stars 80s linear infinite;
+        }
+        .stars { background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat top center; }
+        .stars2 { background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat top center; animation: stars 120s linear infinite; animation-delay: -20s; }
+        .stars3 { background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat top center; animation: stars 160s linear infinite; animation-delay: -40s; }
+        
+        .chat-screen-container {
+            transition: background 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-black text-white antialiased h-screen w-screen overflow-hidden">
+
+    <div id="app-container" class="h-full w-full flex flex-col">
+
+        <!-- Home Screen -->
+        <main id="home-screen" class="flex flex-col h-full">
+            <header class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/50 backdrop-blur-sm flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <img src="/vaultylogo2.png" alt="Vaulty Logo" class="h-8 w-auto">
+                    <p class="text-sm text-gray-400 hidden sm:block">Your AI Companions</p>
+                </div>
+                <button id="go-premium-btn-home" class="gradient-bg hover:opacity-90 transition text-white font-semibold py-2 px-4 rounded-lg shadow-md">
+                    Go Premium
+                </button>
+            </header>
+            <div class="p-4 flex-grow overflow-y-auto no-scrollbar">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold gradient-text">My Companions</h2>
+                    <span id="companion-count" class="text-sm text-gray-400">0/3 Created</span>
+                </div>
+                <div id="companions-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Companion cards will be injected here -->
+                </div>
+                <div id="no-companions-placeholder" class="text-center py-16">
+                    <p class="text-gray-400">You haven't created any companions yet.</p>
+                    <p class="text-gray-500 text-sm mt-1">Click "Create New Companion" to start.</p>
+                </div>
+            </div>
+            <footer class="p-4 border-t border-gray-800 flex-shrink-0">
+                <button id="create-new-btn" class="w-full gradient-bg hover:opacity-90 transition text-white font-bold py-3 px-4 rounded-lg">
+                    Create New Companion
+                </button>
+            </footer>
+        </main>
+
+        <!-- Create Companion Screen -->
+        <div id="create-companion-screen" class="hidden flex-col h-full">
+            <header class="p-4 border-b border-gray-800 flex items-center gap-4 bg-black/50 backdrop-blur-sm flex-shrink-0">
+                <button id="back-to-home-btn" class="p-1 rounded-full hover:bg-gray-800"><i data-lucide="arrow-left"></i></button>
+                <div>
+                    <h1 class="text-xl font-bold gradient-text">Create Companion</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <!-- Progress dots -->
+                        <div class="w-3 h-3 rounded-full bg-blue-500" data-progress="1"></div>
+                        <div class="w-3 h-3 rounded-full bg-gray-700" data-progress="2"></div>
+                        <div class="w-3 h-3 rounded-full bg-gray-700" data-progress="3"></div>
+                        <div class="w-3 h-3 rounded-full bg-gray-700" data-progress="4"></div>
+                        <div class="w-3 h-3 rounded-full bg-gray-700" data-progress="5"></div>
+                    </div>
+                </div>
+            </header>
+            <div id="creation-steps-container" class="flex-grow overflow-y-auto no-scrollbar p-6">
+                 <div class="max-w-xl mx-auto">
+                    <!-- Step 1: Basic Info -->
+                    <div id="step-1" data-step="1" class="space-y-6">
+                        <h2 class="text-lg font-semibold gradient-text mb-4">Step 1: Basic Information</h2>
+                        <div class="space-y-4">
+                            <input type="text" id="companion-name" placeholder="Name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="number" id="companion-age" placeholder="Age" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <select id="companion-gender" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="" disabled selected>Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Non-binary">Non-binary</option>
+                            </select>
+                            <select id="companion-nationality" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="" disabled selected>Select Nationality</option>
+                                <!-- Nationalities will be populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Step 2: Profile Picture -->
+                    <div id="step-2" data-step="2" class="hidden space-y-6">
+                         <h2 class="text-lg font-semibold gradient-text mb-4">Step 2: Profile Picture</h2>
+                         <div class="flex flex-col items-center justify-center bg-gray-900 border-2 border-dashed border-gray-700 rounded-lg p-8 text-center">
+                            <img id="avatar-preview" src="https://placehold.co/128x128/374151/9CA3AF?text=Upload" class="w-32 h-32 rounded-full object-cover mb-4">
+                            <p class="text-gray-400 mb-2">Upload a picture for your companion.</p>
+                            <input type="file" id="companion-avatar-upload" class="hidden" accept="image/*">
+                            <button onclick="document.getElementById('companion-avatar-upload').click()" class="gradient-bg hover:opacity-90 transition text-white font-semibold py-2 px-5 rounded-lg">
+                                Choose File
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Step 3: Role -->
+                    <div id="step-3" data-step="3" class="hidden space-y-6">
+                        <h2 class="text-lg font-semibold gradient-text mb-4">Step 3: Choose a Role</h2>
+                        <div id="roles-grid" class="grid grid-cols-2 gap-4">
+                            <!-- Roles will be populated by JS -->
+                        </div>
+                        <div id="expert-input-container" class="mt-4 hidden">
+                            <input type="text" id="expert-topic" placeholder="e.g., Crypto, Cars, History..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <!-- Step 4: Writing Style -->
+                    <div id="step-4" data-step="4" class="hidden space-y-6">
+                        <h2 class="text-lg font-semibold gradient-text mb-4">Step 4: Writing Style (Beta)</h2>
+                        <div class="flex flex-col items-center justify-center bg-gray-900 border-2 border-dashed border-gray-700 rounded-lg p-8 text-center">
+                            <i data-lucide="scan-line" class="w-16 h-16 text-blue-400 mb-4"></i>
+                            <p class="text-gray-400 mb-4">Upload a chat screenshot. Our AI will analyze the writing style to make your companion's responses more realistic.</p>
+                            <input type="file" id="style-upload" class="hidden" accept="image/*">
+                             <button onclick="document.getElementById('style-upload').click()" class="gradient-bg hover:opacity-90 transition text-white font-semibold py-2 px-5 rounded-lg">
+                                Upload Screenshot
+                            </button>
+                            <p id="style-upload-feedback" class="text-sm text-green-400 mt-2"></p>
+                        </div>
+                    </div>
+                    <!-- Step 5: Preview -->
+                    <div id="step-5" data-step="5" class="hidden space-y-6">
+                        <h2 class="text-lg font-semibold gradient-text mb-4">Step 5: Preview</h2>
+                        <div class="bg-gray-900/50 rounded-lg p-4 flex items-center space-x-4 shadow-lg">
+                            <img id="preview-avatar" src="https://placehold.co/96x96/4B5563/9CA3AF?text=?" class="w-24 h-24 rounded-full object-cover border-4 border-gray-700">
+                            <div>
+                                <h3 id="preview-name" class="text-xl font-bold gradient-text">Companion Name</h3>
+                                <p id="preview-details" class="text-gray-400">Age, Gender, Nationality</p>
+                                <p id="preview-role" class="mt-2 inline-block bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full">Role</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-4">This is how your companion card will appear. If everything looks good, click "Finish".</p>
+                    </div>
+                 </div>
+            </div>
+            <footer class="p-4 border-t border-gray-800 flex justify-between flex-shrink-0">
+                <button id="creation-back-btn" class="bg-gray-700 hover:bg-gray-600 transition text-white font-bold py-3 px-6 rounded-lg hidden">
+                    Back
+                </button>
+                <button id="creation-next-btn" class="gradient-bg hover:opacity-90 transition text-white font-bold py-3 px-6 rounded-lg ml-auto">
+                    Next
+                </button>
+            </footer>
+        </div>
+        
+        <!-- Chat Screen -->
+        <div id="chat-screen" class="hidden flex-col h-full relative">
+            <div id="chat-background-container" class="absolute inset-0 -z-10"></div>
+            <header class="p-4 border-b border-gray-800/50 flex items-center gap-3 bg-black/70 backdrop-blur-sm z-10 flex-shrink-0">
+                <button id="back-to-home-from-chat-btn" class="p-1 rounded-full hover:bg-gray-800"><i data-lucide="arrow-left"></i></button>
+                <img id="chat-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+                <div>
+                    <h2 id="chat-name" class="font-bold gradient-text"></h2>
+                    <p id="chat-status" class="text-xs text-green-400 flex items-center gap-1">
+                        <span class="w-2 h-2 bg-green-400 rounded-full"></span>Active Now
+                    </p>
+                </div>
+                <div class="ml-auto relative">
+                    <button id="chat-menu-btn" class="p-2 rounded-full hover:bg-gray-800">
+                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                    </button>
+                    <div id="chat-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-gray-900 rounded-lg shadow-xl z-20 overflow-hidden border border-gray-700">
+                        <a href="#" id="change-bg-btn" class="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-gray-700">
+                            <i data-lucide="image" class="w-4 h-4"></i> Backgrounds
+                        </a>
+                    </div>
+                </div>
+            </header>
+            <div id="chat-messages" class="flex-grow p-4 overflow-y-auto no-scrollbar flex flex-col-reverse space-y-4 space-y-reverse">
+                <!-- Messages will be injected here -->
+            </div>
+            <div id="typing-indicator-container" class="px-4 py-2 hidden flex-shrink-0">
+                 <div class="flex items-center gap-2">
+                    <img id="typing-avatar" src="" class="w-8 h-8 rounded-full object-cover">
+                    <div class="bg-gray-800 rounded-lg px-3 py-2">
+                        <div class="typing-indicator"><span></span><span></span><span></span></div>
+                    </div>
+                 </div>
+            </div>
+            <footer class="p-3 bg-black/70 backdrop-blur-sm border-t border-gray-800/50 flex-shrink-0">
+                <form id="message-form" class="flex items-center gap-2">
+                    <button type="button" class="p-2 text-gray-400 hover:text-white"><i data-lucide="paperclip"></i></button>
+                    <input type="text" id="message-input" placeholder="Type a message..." class="flex-grow bg-gray-900 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                    <button type="submit" class="gradient-bg rounded-full p-2 text-white"><i data-lucide="send"></i></button>
+                </form>
+            </footer>
+        </div>
+
+        <!-- Premium Screen -->
+        <main id="premium-screen" class="hidden flex-col h-full">
+            <header class="p-4 border-b border-gray-800 flex items-center gap-4 bg-black/50 backdrop-blur-sm flex-shrink-0">
+                 <button id="back-to-home-from-premium-btn" class="p-1 rounded-full hover:bg-gray-800"><i data-lucide="arrow-left"></i></button>
+                 <h1 class="text-xl font-bold gradient-text">Vaulty Premium</h1>
+            </header>
+            <div class="flex-grow p-6 overflow-y-auto no-scrollbar">
+                <div class="max-w-lg mx-auto">
+                    <div class="text-center">
+                        <i data-lucide="gem" class="w-16 h-16 text-blue-400 mx-auto mb-4"></i>
+                        <h2 class="text-2xl font-bold mb-2">Unlock Unlimited Access</h2>
+                        <p class="text-gray-400 mb-8">Get the most out of Vaulty with Premium features.</p>
+                    </div>
+
+                    <div class="bg-gray-900/50 p-4 rounded-lg mb-6">
+                        <div class="flex justify-center items-center bg-gray-950 rounded-full p-1">
+                            <button id="monthly-plan-btn" class="w-1/2 py-2 rounded-full text-sm font-semibold gradient-bg text-white">Monthly</button>
+                            <button id="yearly-plan-btn" class="w-1/2 py-2 rounded-full text-sm font-semibold text-gray-400">Yearly</button>
+                        </div>
+                        <div class="text-center mt-4">
+                             <p class="text-4xl font-bold" id="price-display">$19.99<span class="text-base font-normal text-gray-400">/month</span></p>
+                             <p class="text-sm text-green-400 h-5" id="yearly-discount-text">&nbsp;</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-gray-300 mb-8">
+                         <div class="flex items-start gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-green-400 flex-shrink-0 mt-1"></i><span><span class="font-semibold text-white">Unlimited</span> Companions</span></div>
+                         <div class="flex items-start gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-green-400 flex-shrink-0 mt-1"></i><span>Access to all <span class="font-semibold text-white">Premium Backgrounds</span></span></div>
+                         <div class="flex items-start gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-green-400 flex-shrink-0 mt-1"></i><span>Priority AI response times</span></div>
+                         <div class="flex items-start gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-green-400 flex-shrink-0 mt-1"></i><span>Early access to new features</span></div>
+                    </div>
+
+                    <div>
+                        <label for="promo-code" class="text-sm font-medium text-gray-400">Promo Code</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" id="promo-code" placeholder="Enter code" class="flex-grow bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button id="apply-promo-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 rounded-lg">Apply</button>
+                        </div>
+                        <p id="promo-feedback" class="text-sm mt-2 h-4"></p>
+                    </div>
+                </div>
+            </div>
+            <footer class="p-4 border-t border-gray-800 flex-shrink-0">
+                <button class="w-full max-w-lg mx-auto block gradient-bg hover:opacity-90 transition text-white font-bold py-3 px-4 rounded-lg shadow-lg">
+                    Subscribe Now
+                </button>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Backgrounds Modal -->
+    <div id="backgrounds-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-xl w-full max-w-md max-h-[80vh] flex flex-col border border-gray-700">
+            <header class="p-4 flex justify-between items-center border-b border-gray-700">
+                <h2 class="text-lg font-semibold gradient-text">Chat Backgrounds</h2>
+                <button id="close-bg-modal-btn" class="p-1 rounded-full hover:bg-gray-700"><i data-lucide="x"></i></button>
+            </header>
+            <div id="backgrounds-grid" class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto no-scrollbar">
+                <!-- Background options will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        companions: [],
+        currentUser: {
+            isPremium: false,
+        },
+        activeCompanionId: null,
+        creationData: {},
+        currentCreationStep: 1,
+    };
+
+    const MAX_FREE_COMPANIONS = 3;
+
+    // --- DOM ELEMENTS ---
+    const screens = {
+        home: document.getElementById('home-screen'),
+        create: document.getElementById('create-companion-screen'),
+        chat: document.getElementById('chat-screen'),
+        premium: document.getElementById('premium-screen'),
+    };
+    const companionListEl = document.getElementById('companions-list');
+    const noCompanionsPlaceholder = document.getElementById('no-companions-placeholder');
+    const companionCountEl = document.getElementById('companion-count');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessagesContainer = document.getElementById('chat-messages');
+    const creationStepsContainer = document.getElementById('creation-steps-container');
+    const creationNav = {
+        back: document.getElementById('creation-back-btn'),
+        next: document.getElementById('creation-next-btn'),
+    };
+    const promoCodeInput = document.getElementById('promo-code');
+    const promoFeedback = document.getElementById('promo-feedback');
+    const bgModal = document.getElementById('backgrounds-modal');
+    
+    // --- DATA ---
+    const nationalities = ["American", "British", "Canadian", "Australian", "German", "French", "Spanish", "Italian", "Japanese", "Chinese", "Russian", "Indian", "Brazilian", "Mexican", "Argentinian", "South Korean", "Nigerian", "Egyptian", "South African", "Swedish", "Norwegian", "Danish", "Finnish", "Dutch", "Belgian", "Swiss", "Austrian", "Portuguese", "Greek", "Turkish", "Slovenian", "Croatian", "Serbian"];
+    const roles = [
+        { name: 'Friend', icon: 'smile' }, { name: 'Lover', icon: 'heart' }, { name: 'Assistant', icon: 'clipboard-pen' }, 
+        { name: 'Coach', icon: 'award' }, { name: 'Mentor', icon: 'graduation-cap' }, { name: 'Businessman', icon: 'briefcase' }, 
+        { name: 'Expert', icon: 'flask-conical' }, { name: 'Creative Muse', icon: 'palette' }, { name: 'Travel Buddy', icon: 'map' }, 
+        { name: 'Historian', icon: 'scroll' }
+    ];
+    const backgrounds = [
+        { id: 'default', name: 'Default', type: 'static', value: 'bg-black', premium: false },
+        { id: 'static-dark', name: 'Deep Space', type: 'static', value: 'bg-gray-950', premium: false },
+        { id: 'gradient-purple', name: 'Purple Haze', type: 'static', value: 'bg-gradient-to-br from-black to-purple-900', premium: false },
+        { id: 'gradient-blue', name: 'Oceanic', type: 'static', value: 'bg-gradient-to-tr from-black to-blue-900', premium: false },
+        { id: 'anim-gradient', name: 'Sunset', type: 'animated', value: 'bg-animated-gradient-1', premium: true },
+        { id: 'anim-stars', name: 'Starfield', type: 'animated-special', value: 'bg-black', premium: true },
+        { id: 'static-green', name: 'Forest', type: 'static', value: 'bg-gradient-to-b from-black to-green-900', premium: false },
+        { id: 'static-red', name: 'Crimson', type: 'static', value: 'bg-gradient-to-t from-black to-red-900', premium: true },
+        { id: 'light-mode', name: 'Daylight', type: 'static', value: 'bg-gray-200', premium: false, light: true },
+        { id: 'texture-1', name: 'Carbon Fiber', type: 'static', value: 'bg-[url(https://www.transparenttextures.com/patterns/carbon-fibre.png)] bg-gray-900', premium: true },
+        { id: 'texture-2', name: 'Subtle Grid', type: 'static', value: 'bg-[url(https://www.transparenttextures.com/patterns/clean-textile.png)] bg-gray-950', premium: false },
+        { id: 'texture-3', name: 'Metal', type: 'static', value: 'bg-[url(https://www.transparenttextures.com/patterns/brushed-alum.png)] bg-gray-800', premium: true },
+    ];
+
+
+    // --- UTILITY FUNCTIONS ---
+    const showScreen = (screenName) => {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden', 'flex-col'));
+        screens[screenName].classList.remove('hidden');
+        screens[screenName].classList.add('flex');
+    };
+
+    const formatTimeAgo = (timestamp) => {
+        if (!timestamp) return '...';
+        const now = Date.now();
+        const seconds = Math.floor((now - timestamp) / 1000);
+        
+        if (seconds < 60) return `Last active just now`;
+        
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `Last active ${minutes} min ago`;
+        
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `Last active ${hours}h ago`;
+        
+        const days = Math.floor(hours / 24);
+        return `Last active ${days}d ago`;
+    };
+
+    const saveState = () => {
+        // In a real app, this would use localStorage or a server.
+        // For this demo, state is ephemeral.
+    };
+
+    const loadState = () => {
+        // Load from localStorage if available
+    };
+
+    // --- RENDER FUNCTIONS ---
+    const renderCompanionList = () => {
+        companionListEl.innerHTML = '';
+        if (state.companions.length === 0) {
+            noCompanionsPlaceholder.classList.remove('hidden');
+            companionListEl.classList.add('hidden');
+        } else {
+            noCompanionsPlaceholder.classList.add('hidden');
+            companionListEl.classList.remove('hidden');
+            state.companions.forEach(c => {
+                const isActive = (Date.now() - c.lastActive) < 65000; // Active within 65 seconds
+                const statusText = isActive ? 'Active Now' : formatTimeAgo(c.lastActive);
+                const statusColor = isActive ? 'text-green-400' : 'text-gray-400';
+                const statusDot = isActive ? '<span class="w-2.5 h-2.5 bg-green-400 rounded-full"></span>' : '';
+
+                const card = document.createElement('div');
+                card.className = 'bg-gray-900/50 p-4 rounded-lg flex items-center space-x-4 cursor-pointer hover:bg-gray-800 transition';
+                card.dataset.id = c.id;
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${c.avatar}" class="w-16 h-16 rounded-full object-cover">
+                        ${isActive ? '<span class="absolute bottom-0 right-0 block h-4 w-4 rounded-full bg-green-500 border-2 border-gray-900"></span>' : ''}
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold gradient-text">${c.name}</h3>
+                        <p class="text-sm ${statusColor} flex items-center gap-1.5">${statusDot}${statusText}</p>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-gray-500"></i>
+                `;
+                card.addEventListener('click', () => openChat(c.id));
+                companionListEl.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+        updateCompanionCount();
+    };
+    
+    const updateCompanionCount = () => {
+        const count = state.companions.length;
+        const limit = MAX_FREE_COMPANIONS;
+        companionCountEl.textContent = `${count}/${state.currentUser.isPremium ? '∞' : limit} Created`;
+        const createBtn = document.getElementById('create-new-btn');
+        if (!state.currentUser.isPremium && count >= limit) {
+            createBtn.disabled = true;
+            createBtn.textContent = 'Companion Limit Reached';
+            createBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
+            createBtn.classList.remove('gradient-bg');
+        } else {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create New Companion';
+            createBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
+            createBtn.classList.add('gradient-bg');
+        }
+    };
+
+    const renderChat = () => {
+        const companion = state.companions.find(c => c.id === state.activeCompanionId);
+        if (!companion) return;
+
+        // Header
+        document.getElementById('chat-avatar').src = companion.avatar;
+        document.getElementById('chat-name').textContent = companion.name;
+        updateChatStatus();
+
+        // Messages
+        chatMessagesContainer.innerHTML = '';
+        [...companion.chatHistory].reverse().forEach(msg => {
+            const isUser = msg.sender === 'user';
+            const messageEl = document.createElement('div');
+            messageEl.className = `flex items-end gap-2 max-w-[80%] ${isUser ? 'ml-auto flex-row-reverse' : ''}`;
+            messageEl.innerHTML = `
+                ${!isUser ? `<img src="${companion.avatar}" class="w-8 h-8 rounded-full object-cover">` : ''}
+                <div class="p-3 rounded-2xl ${isUser ? 'gradient-bg rounded-br-md' : 'bg-gray-800 rounded-bl-md'}">
+                    <p class="text-sm">${msg.text}</p>
+                </div>
+            `;
+            chatMessagesContainer.appendChild(messageEl);
+        });
+        
+        // Background
+        const bgContainer = document.getElementById('chat-background-container');
+        const bgData = backgrounds.find(b => b.id === companion.backgroundId) || backgrounds[0];
+        
+        bgContainer.className = `absolute inset-0 -z-10 transition-all duration-500 ${bgData.value}`;
+        
+        // Handle special animated backgrounds
+        if (bgData.id === 'anim-stars') {
+            bgContainer.innerHTML = `<div class="stars-container"><div class="stars"></div><div class="stars2"></div><div class="stars3"></div></div>`;
+        } else {
+            bgContainer.innerHTML = '';
+        }
+
+        // Set text color for light backgrounds
+        const chatScreen = document.getElementById('chat-screen');
+        if (bgData.light) {
+            chatScreen.classList.remove('text-white');
+            chatScreen.classList.add('text-gray-800');
+            // Adjust message bubble colors
+            document.querySelectorAll('#chat-messages .bg-gray-800').forEach(el => {
+                el.classList.remove('bg-gray-800');
+                el.classList.add('bg-gray-300');
+            });
+        } else {
+            chatScreen.classList.add('text-white');
+            chatScreen.classList.remove('text-gray-800');
+        }
+    };
+
+    const updateChatStatus = () => {
+        const companion = state.companions.find(c => c.id === state.activeCompanionId);
+        if (!companion) return;
+        
+        const statusEl = document.getElementById('chat-status');
+        const isActive = (Date.now() - companion.lastActive) < 65000;
+        
+        if (companion.isTyping) {
+            statusEl.textContent = 'typing...';
+            statusEl.className = 'text-xs text-gray-400 italic';
+        } else if (isActive) {
+            statusEl.innerHTML = `<span class="w-2 h-2 bg-green-400 rounded-full"></span>Active Now`;
+            statusEl.className = 'text-xs text-green-400 flex items-center gap-1';
+        } else {
+            statusEl.textContent = formatTimeAgo(companion.lastActive);
+            statusEl.className = 'text-xs text-gray-400';
+        }
+    };
+
+    // --- APP LOGIC ---
+    // --- Gemini API Integration ---
+    const getGeminiResponse = async (systemPrompt, userQuery) => {
+        const apiKey = "AIzaSyAVsgP4wvcrkhZchKlv3-5WJEqGW_i-fmU"; // Left empty as per instructions
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                console.error("API Error Response:", await response.json());
+                return "I'm having trouble connecting right now. Please try again later.";
+            }
+
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                return candidate.content.parts[0].text;
+            } else {
+                return "I'm not sure how to respond to that.";
+            }
+        } catch (error) {
+            console.error("Fetch Error:", error);
+            return "There was an error reaching the server.";
+        }
+    };
+
+    const generateSystemPrompt = (companion) => {
+        let roleDescription = `Your role is a ${companion.role}.`;
+        if (companion.role === 'Expert' && companion.expertTopic) {
+            roleDescription = `Your role is an Expert in ${companion.expertTopic}.`;
+        }
+        
+        let basePrompt = `You are an AI Companion. You must strictly adopt the following persona and never deviate.
+        - Name: ${companion.name}
+        - Age: ${companion.age}
+        - Gender: ${companion.gender}. Your responses must be consistent with this gender (e.g., use appropriate pronouns and phrasing based on the language you are speaking).
+        - Nationality: ${companion.nationality}.
+        - Role: ${roleDescription}
+        
+        IMPORTANT RULES:
+        1.  LANGUAGE: You MUST ONLY understand and respond in the primary language spoken in ${companion.nationality}. Do not use English unless that is the primary language of the nationality specified. For example, if the nationality is Slovenian, you must speak Slovenian. If it is German, you must speak German.
+        2.  PERSONA: Stay in character at all times. All your knowledge and responses should be filtered through your defined persona.
+        3.  CONVERSATION FLOW: The user will provide the recent chat history. Your response must be a natural continuation of this conversation. Do not repeat greetings or restart the conversation.
+        4.  CONCISENESS: Keep your responses relatively short and conversational, like in a chat app.`;
+
+        if (companion.role === 'Lover' || companion.role === 'Friend') {
+            basePrompt += `
+        
+        SPECIAL STYLE RULES FOR THIS ROLE:
+        - Write in all lowercase letters only.
+        - Do not use any punctuation like commas or periods.
+        - Use very few or no emojis at all.
+        - Keep messages very short and casual, like texting a close friend.`;
+        }
+        
+        return basePrompt;
+    };
+
+
+    const openChat = (companionId) => {
+        state.activeCompanionId = companionId;
+        renderChat();
+        showScreen('chat');
+    };
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        if (!text) return;
+
+        const companion = state.companions.find(c => c.id === state.activeCompanionId);
+        if (!companion) return;
+        
+        const sendButton = messageForm.querySelector('button[type="submit"]');
+        sendButton.disabled = true;
+
+        // 1. Add user message
+        companion.chatHistory.push({ sender: 'user', text, timestamp: Date.now() });
+        messageInput.value = '';
+        renderChat();
+
+        // 2. Real AI response with realistic timing
+        const typingIndicator = document.getElementById('typing-indicator-container');
+        document.getElementById('typing-avatar').src = companion.avatar;
+
+        const readingDelay = Math.random() * 2000 + 1000; // 1 - 3 seconds
+
+        setTimeout(async () => {
+            companion.isTyping = true;
+            typingIndicator.classList.remove('hidden');
+            updateChatStatus();
+            
+            const systemPrompt = generateSystemPrompt(companion);
+            // Provide last 10 messages as context for the AI for better flow
+            const conversationContext = companion.chatHistory.slice(-10).map(m => `${m.sender}: ${m.text}`).join('\n');
+            const aiResponse = await getGeminiResponse(systemPrompt, conversationContext);
+
+            const typingDuration = Math.max(1500, aiResponse.length * 60); // 60ms per character, min 1.5s
+
+            setTimeout(() => {
+                companion.isTyping = false;
+                typingIndicator.classList.add('hidden');
+                companion.chatHistory.push({ sender: 'companion', text: aiResponse, timestamp: Date.now() });
+                companion.lastActive = Date.now();
+                renderChat();
+                updateChatStatus();
+                sendButton.disabled = false;
+            }, typingDuration);
+
+        }, readingDelay);
+    };
+
+    // Presence & Time simulation
+    setInterval(() => {
+        let needsRender = false;
+        state.companions.forEach(c => {
+            if (c.isTyping) return; // Don't change status while typing
+
+            const lastMessage = c.chatHistory.length > 0 ? c.chatHistory[c.chatHistory.length - 1] : null;
+            const lastMessageTime = lastMessage ? lastMessage.timestamp : c.createdAt;
+
+            // If the chat has been silent for over a minute, the companion is no longer "Active Now"
+            if (Date.now() - lastMessageTime > 60000) {
+                 // We check if it's currently considered active, and if so, force an update
+                 if ((Date.now() - c.lastActive) < 65000) {
+                     c.lastActive = Date.now() - 65000; // Set it to be just over a minute ago
+                     needsRender = true;
+                 }
+            }
+        });
+        
+        if (needsRender || document.getElementById('home-screen').style.display !== 'none') {
+             renderCompanionList();
+        }
+        if (document.getElementById('chat-screen').style.display !== 'none') {
+             updateChatStatus();
+        }
+
+    }, 5000); // Check every 5 seconds
+
+    // --- Creation Flow Logic ---
+    const initCreationFlow = () => {
+        if (!state.currentUser.isPremium && state.companions.length >= MAX_FREE_COMPANIONS) {
+             alert("You've reached your companion limit. Go Premium to create more!");
+             return;
+        }
+        state.currentCreationStep = 1;
+        state.creationData = {
+            avatar: 'https://placehold.co/128x128/374151/9CA3AF?text=Upload'
+        };
+        resetCreationForm();
+        updateCreationStepUI();
+        showScreen('create');
+    };
+
+    const resetCreationForm = () => {
+        document.getElementById('companion-name').value = '';
+        document.getElementById('companion-age').value = '';
+        document.getElementById('companion-gender').value = '';
+        document.getElementById('companion-nationality').value = '';
+        document.getElementById('avatar-preview').src = 'https://placehold.co/128x128/374151/9CA3AF?text=Upload';
+        document.getElementById('style-upload-feedback').textContent = '';
+        document.querySelectorAll('#roles-grid .ring-2').forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+        document.getElementById('expert-input-container').classList.add('hidden');
+    };
+
+    const updateCreationStepUI = () => {
+        // Hide all steps
+        creationStepsContainer.querySelectorAll('[data-step]').forEach(step => step.classList.add('hidden'));
+        // Show current step
+        creationStepsContainer.querySelector(`[data-step="${state.currentCreationStep}"]`).classList.remove('hidden');
+
+        // Update progress dots
+        document.querySelectorAll('[data-progress]').forEach((dot, index) => {
+            if (index + 1 < state.currentCreationStep) {
+                dot.className = 'w-3 h-3 rounded-full bg-blue-500 transition-colors';
+            } else if (index + 1 === state.currentCreationStep) {
+                dot.className = 'w-3 h-3 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-offset-black ring-blue-500 transition-all';
+            } else {
+                dot.className = 'w-3 h-3 rounded-full bg-gray-700 transition-colors';
+            }
+        });
+
+        // Update nav buttons
+        creationNav.back.classList.toggle('hidden', state.currentCreationStep === 1);
+        creationNav.next.textContent = state.currentCreationStep === 5 ? 'Finish' : 'Next';
+        creationNav.next.disabled = false;
+    };
+
+    const handleCreationNext = () => {
+        if (validateCurrentStep()) {
+            if (state.currentCreationStep < 5) {
+                state.currentCreationStep++;
+                if (state.currentCreationStep === 5) {
+                    populatePreview();
+                }
+                updateCreationStepUI();
+            } else {
+                finishCreation();
+            }
+        }
+    };
+
+    const handleCreationBack = () => {
+        if (state.currentCreationStep > 1) {
+            state.currentCreationStep--;
+            updateCreationStepUI();
+        }
+    };
+    
+    const validateCurrentStep = () => {
+        let isValid = true;
+        // Simple validation, can be improved
+        switch(state.currentCreationStep) {
+            case 1:
+                const name = document.getElementById('companion-name').value;
+                const age = document.getElementById('companion-age').value;
+                const gender = document.getElementById('companion-gender').value;
+                const nationality = document.getElementById('companion-nationality').value;
+                if (!name || !age || !gender || !nationality) {
+                    alert('Please fill all fields.');
+                    isValid = false;
+                } else {
+                    state.creationData = {...state.creationData, name, age, gender, nationality};
+                }
+                break;
+            case 2:
+                // Avatar has a default, so always valid
+                break;
+            case 3:
+                if (!state.creationData.role) {
+                    alert('Please select a role.');
+                    isValid = false;
+                } else if (state.creationData.role === 'Expert') {
+                    const topic = document.getElementById('expert-topic').value;
+                    if (!topic) {
+                        alert('Please specify the expert topic.');
+                        isValid = false;
+                    } else {
+                        state.creationData.expertTopic = topic;
+                    }
+                }
+                break;
+        }
+        return isValid;
+    };
+    
+    const populatePreview = () => {
+        document.getElementById('preview-avatar').src = state.creationData.avatar;
+        document.getElementById('preview-name').textContent = state.creationData.name;
+        document.getElementById('preview-details').textContent = `${state.creationData.age}, ${state.creationData.gender}, ${state.creationData.nationality}`;
+        let roleText = state.creationData.role;
+        if (roleText === 'Expert') {
+            roleText += ` (${state.creationData.expertTopic})`;
+        }
+        document.getElementById('preview-role').textContent = roleText;
+    };
+
+    const finishCreation = async () => {
+        creationNav.next.disabled = true;
+        creationNav.next.textContent = 'Creating...';
+        
+        const newCompanion = {
+            id: Date.now(),
+            ...state.creationData,
+            createdAt: Date.now(),
+            lastActive: Date.now(),
+            isTyping: false,
+            chatHistory: [],
+            backgroundId: 'default'
+        };
+
+        // Generate initial message with Gemini
+        const systemPrompt = generateSystemPrompt(newCompanion);
+        const greetingPrompt = "Write a short, unique, and welcoming opening message for me to send as my first message to the user. Introduce yourself briefly based on your persona.";
+        const initialMessage = await getGeminiResponse(systemPrompt, greetingPrompt);
+        
+        newCompanion.chatHistory.push({ sender: 'companion', text: initialMessage, timestamp: Date.now() });
+
+        state.companions.push(newCompanion);
+        saveState();
+        renderCompanionList();
+        showScreen('home');
+    };
+    
+    // --- Premium Screen Logic ---
+    const handlePlanToggle = (isYearly) => {
+        const monthlyBtn = document.getElementById('monthly-plan-btn');
+        const yearlyBtn = document.getElementById('yearly-plan-btn');
+        const priceDisplay = document.getElementById('price-display');
+        const discountText = document.getElementById('yearly-discount-text');
+
+        if (isYearly) {
+            monthlyBtn.className = "w-1/2 py-2 rounded-full text-sm font-semibold text-gray-400";
+            yearlyBtn.className = "w-1/2 py-2 rounded-full text-sm font-semibold gradient-bg text-white";
+            const yearlyPrice = 199.99;
+            priceDisplay.innerHTML = `$${(yearlyPrice / 12).toFixed(2)}<span class="text-base font-normal text-gray-400">/month</span>`;
+            discountText.textContent = `Billed as $${yearlyPrice} per year (Save 16%)`;
+        } else {
+            yearlyBtn.className = "w-1/2 py-2 rounded-full text-sm font-semibold text-gray-400";
+            monthlyBtn.className = "w-1/2 py-2 rounded-full text-sm font-semibold gradient-bg text-white";
+            priceDisplay.innerHTML = `$19.99<span class="text-base font-normal text-gray-400">/month</span>`;
+            discountText.innerHTML = '&nbsp;';
+        }
+    };
+    
+    const handleApplyPromo = () => {
+        const code = promoCodeInput.value.trim().toUpperCase();
+        if (code === "FREE210407") {
+            promoFeedback.textContent = 'Promo applied! You get one month free.';
+            promoFeedback.className = 'text-sm mt-2 h-4 text-green-400';
+            state.currentUser.isPremium = true; 
+            updateCompanionCount();
+            alert('Premium unlocked for 1 month!');
+        } else {
+            promoFeedback.textContent = 'Invalid promo code.';
+            promoFeedback.className = 'text-sm mt-2 h-4 text-red-400';
+        }
+    };
+    
+    // --- Backgrounds Modal Logic ---
+    const openBackgroundsModal = () => {
+        const grid = document.getElementById('backgrounds-grid');
+        grid.innerHTML = '';
+        backgrounds.forEach(bg => {
+            const canUse = !bg.premium || state.currentUser.isPremium;
+            const item = document.createElement('div');
+            item.className = `relative aspect-video rounded-lg cursor-pointer overflow-hidden group border-2 ${canUse ? 'border-transparent hover:border-blue-500' : 'border-transparent'}`;
+            item.dataset.bgId = bg.id;
+            
+            let bgClasses = bg.value;
+            let previewContent = `<div class="absolute inset-0 ${bgClasses}"></div>`;
+            if (bg.id === 'anim-stars') {
+                previewContent = `<div class="absolute inset-0 bg-black"><div style="width:100%; height:100%;" class="stars-container"><div class="stars"></div></div></div>`;
+            }
+
+            const premiumIcon = bg.premium ? `<div class="absolute top-1 right-1 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1"><i data-lucide="gem" class="w-3 h-3"></i></div>` : '';
+            const lockIcon = !canUse ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center"><i data-lucide="lock" class="w-6 h-6 text-white"></i></div>` : '';
+
+            item.innerHTML = `
+                ${previewContent}
+                ${premiumIcon}
+                <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition"></div>
+                ${lockIcon}
+            `;
+
+            if (canUse) {
+                item.addEventListener('click', () => {
+                    const companion = state.companions.find(c => c.id === state.activeCompanionId);
+                    if (companion) {
+                        companion.backgroundId = bg.id;
+                        renderChat();
+                    }
+                    bgModal.classList.add('hidden');
+                });
+            } else {
+                item.addEventListener('click', () => {
+                    showScreen('premium');
+                    bgModal.classList.add('hidden');
+                });
+            }
+            grid.appendChild(item);
+        });
+        
+        lucide.createIcons();
+        bgModal.classList.remove('hidden');
+    };
+
+    // --- INITIALIZATION & EVENT LISTENERS ---
+    const init = () => {
+        // Populate static data
+        const nationalitySelect = document.getElementById('companion-nationality');
+        nationalities.sort().forEach(n => {
+            const option = document.createElement('option');
+            option.value = n;
+            option.textContent = n;
+            nationalitySelect.appendChild(option);
+        });
+        const rolesGrid = document.getElementById('roles-grid');
+        roles.forEach(role => {
+            const roleEl = document.createElement('button');
+            roleEl.className = 'p-4 bg-gray-900 rounded-lg text-center hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-blue-500';
+            roleEl.dataset.role = role.name;
+            roleEl.innerHTML = `
+                <i data-lucide="${role.icon}" class="w-8 h-8 mx-auto mb-2 text-blue-400"></i>
+                <span class="font-semibold">${role.name}</span>
+            `;
+            roleEl.addEventListener('click', () => {
+                state.creationData.role = role.name;
+                document.querySelectorAll('#roles-grid button').forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+                roleEl.classList.add('ring-2', 'ring-blue-500');
+                document.getElementById('expert-input-container').classList.toggle('hidden', role.name !== 'Expert');
+            });
+            rolesGrid.appendChild(roleEl);
+        });
+        lucide.createIcons();
+
+        // Event listeners
+        document.getElementById('create-new-btn').addEventListener('click', initCreationFlow);
+        document.getElementById('back-to-home-btn').addEventListener('click', () => showScreen('home'));
+        document.getElementById('back-to-home-from-chat-btn').addEventListener('click', () => showScreen('home'));
+        document.getElementById('back-to-home-from-premium-btn').addEventListener('click', () => showScreen('home'));
+        document.getElementById('go-premium-btn-home').addEventListener('click', () => showScreen('premium'));
+
+        messageForm.addEventListener('submit', handleSendMessage);
+
+        creationNav.next.addEventListener('click', handleCreationNext);
+        creationNav.back.addEventListener('click', handleCreationBack);
+        
+        document.getElementById('companion-avatar-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    state.creationData.avatar = event.target.result;
+                    document.getElementById('avatar-preview').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        document.getElementById('style-upload').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                 document.getElementById('style-upload-feedback').textContent = "Style analysis complete!";
+            }
+        });
+        
+        // Premium screen listeners
+        document.getElementById('monthly-plan-btn').addEventListener('click', () => handlePlanToggle(false));
+        document.getElementById('yearly-plan-btn').addEventListener('click', () => handlePlanToggle(true));
+        document.getElementById('apply-promo-btn').addEventListener('click', handleApplyPromo);
+        
+        // Chat menu
+        const chatMenuBtn = document.getElementById('chat-menu-btn');
+        const chatDropdown = document.getElementById('chat-dropdown-menu');
+        chatMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => chatDropdown.classList.add('hidden'));
+        
+        // Backgrounds modal
+        document.getElementById('change-bg-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            openBackgroundsModal();
+            chatDropdown.classList.add('hidden');
+        });
+        document.getElementById('close-bg-modal-btn').addEventListener('click', () => bgModal.classList.add('hidden'));
+
+        // Load initial state
+        loadState();
+        renderCompanionList();
+        showScreen('home');
+    };
+
+    init();
+});
+</script>
+
+</body>
+</html>
+
+
