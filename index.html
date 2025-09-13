@@ -351,6 +351,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
 
+    const appContainer = document.getElementById('app-container');
+
+    // Function to set app height to the viewport's inner height
+    const setAppHeight = () => {
+        appContainer.style.height = `${window.innerHeight}px`;
+    };
+
+    // Set height on load and on window resize
+    window.addEventListener('resize', setAppHeight);
+    setAppHeight();
+
+
     // --- STATE MANAGEMENT ---
     let state = {
         companions: [],
@@ -1043,5 +1055,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
 
